@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MassTransit" Version="7.1.5" />
+    <PackageReference Include="MassTransit.AspNetCore" Version="7.1.5" />
+    <PackageReference Include="MassTransit.Azure.ServiceBus.Core" Version="7.1.5" />
+    <PackageReference Include="MassTransit.Extensions.DependencyInjection" Version="7.1.5" />
+    <PackageReference Include="MassTransit.RabbitMQ" Version="7.1.5" />
+    <PackageReference Include="Microsoft.Azure.Management.Logic" Version="4.1.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MassTransitTests.DataTransferObjects\MassTransitTests.DataTransferObjects.csproj" />
+    <ProjectReference Include="..\MassTransitTests.Shared\MassTransitTests.Shared.csproj" />
+  </ItemGroup>
+
+</Project>
