@@ -4,6 +4,7 @@ using MassTransit.Mediator;
 using MassTransitTests.DataTransferObjects.Commands;
 using MassTransitTests.DataTransferObjects.Events;
 using MassTransitTests.DataTransferObjects.Queries;
+using MassTransitTests.Library1;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MassTransitTests.WebAPI.Controllers
@@ -12,11 +13,13 @@ namespace MassTransitTests.WebAPI.Controllers
     public class TestsController : ControllerBase
     {
         private readonly IBus _bus;
+        private readonly ILibrary1Service _library1Service;
         private readonly IMediator _mediator;
 
-        public TestsController(IBus bus, IMediator mediator)
+        public TestsController(IBus bus, ILibrary1Service library1Service)
         {
             _bus = bus;
+            _library1Service = library1Service;
         }
 
         [HttpPost("request")]
@@ -54,7 +57,7 @@ namespace MassTransitTests.WebAPI.Controllers
         [HttpPost("test")]
         public async Task<IActionResult> SendTestCommand()
         {
-            await _bus.Publish(new TestCommand());
+            await _library1Service.SendTestCommand();
             
             return Ok();
         }

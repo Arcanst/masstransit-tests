@@ -12,14 +12,14 @@ namespace MassTransitTests.Shared
         {
             _bus = bus;
         }
-        
-        public Task Publish<TMessage>(TMessage message)
+
+        protected Task Publish<TMessage>(TMessage message)
             where TMessage : class, IMessage
         {
             return _bus.Publish(message);
         }
 
-        public async Task<TResponse> SendRequest<TRequest, TResponse>(TRequest request)
+        protected async Task<TResponse> Request<TRequest, TResponse>(TRequest request)
             where TRequest : class, IMessage
             where TResponse : class
         {

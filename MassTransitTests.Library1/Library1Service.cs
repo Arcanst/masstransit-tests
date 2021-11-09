@@ -1,6 +1,7 @@
 ﻿using System.Threading.Tasks;
 using MassTransit;
 using MassTransitTests.DataTransferObjects.Commands;
+using MassTransitTests.DataTransferObjects.Responses;
 using MassTransitTests.Shared;
 
 namespace MassTransitTests.Library1
@@ -12,9 +13,9 @@ namespace MassTransitTests.Library1
         {
         }
 
-        public Task SendTestCommand()
+        public Task<TestResponse> SendTestCommand()
         {
-            return Publish(new TestCommand());
+            return Request<TestCommand, TestResponse>(new TestCommand());
         }
     }
 }
