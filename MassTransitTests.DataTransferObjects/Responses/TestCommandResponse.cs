@@ -1,6 +1,6 @@
 ﻿namespace MassTransitTests.DataTransferObjects.Responses
 {
-    public class TestResponse
+    public class TestCommandResponse
     {
     }
 }

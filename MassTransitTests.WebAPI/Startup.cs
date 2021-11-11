@@ -1,4 +1,5 @@
 using MassTransit;
+using MassTransitTests.DataTransferObjects.Commands;
 using MassTransitTests.Library1;
 using MassTransitTests.Library1.Consumers;
 using MassTransitTests.Shared.Startup;
@@ -38,7 +39,7 @@ namespace MassTransitTests.WebAPI
 
         private void RegisterConsumers()
         {
-            RegisterCommandConsumer<TestCommandConsumer>();
+            RegisterCommandConsumer<TestCommand, TestCommandConsumer>();
         }
     }
 }

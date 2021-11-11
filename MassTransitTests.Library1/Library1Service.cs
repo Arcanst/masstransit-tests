@@ -13,9 +13,9 @@ namespace MassTransitTests.Library1
         {
         }
 
-        public Task<TestResponse> SendTestCommand()
+        public Task<TestCommandResponse> SendTestCommand()
         {
-            return Request<TestCommand, TestResponse>(new TestCommand());
+            return Request<TestCommand, TestCommandResponse>(new TestCommand());
         }
     }
 }

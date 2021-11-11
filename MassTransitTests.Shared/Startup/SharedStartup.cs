@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using MassTransit;
 using MassTransit.ExtensionsDependencyInjectionIntegration;
 using MassTransit.RabbitMqTransport;
+using MassTransitTests.DataTransferObjects;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace MassTransitTests.Shared.Startup
@@ -34,24 +35,30 @@ namespace MassTransitTests.Shared.Startup
             _consumerRegistrationActions = new List<Action<IServiceCollectionBusConfigurator>>();
         }
 
-        protected void RegisterQueryConsumer<TQueryConsumer>()
+        protected void RegisterQueryConsumer<TQuery, TQueryConsumer>()
+            where TQuery : class, IMessage
             where TQueryConsumer : class, IConsumer
         {
-            _queryConsumerRegistrationActions.Add((config, registration) => config.AddQueryConsumer<TQueryConsumer>(registration));
+            _queryConsumerRegistrationActions.Add((config, registration)
+                => config.AddQueryConsumer<TQuery, TQueryConsumer>(registration));
             _consumerRegistrationActions.Add(c => c.AddConsumer<TQueryConsumer>());
         }
         
-        protected void RegisterCommandConsumer<TCommandConsumer>()
+        protected void RegisterCommandConsumer<TCommand, TCommandConsumer>()
+            where TCommand : class, IMessage
             where TCommandConsumer : class, IConsumer
         {
-            _commandConsumerRegistrationActions.Add((config, registration) => config.AddCommandConsumer<TCommandConsumer>(registration));
+            _commandConsumerRegistrationActions.Add((config, registration) =>
+                config.AddCommandConsumer<TCommand, TCommandConsumer>(registration));
             _consumerRegistrationActions.Add(c => c.AddConsumer<TCommandConsumer>());
         }
         
-        protected void RegisterEventConsumer<TEventConsumer>()
+        protected void RegisterEventConsumer<TEvent, TEventConsumer>()
+            where TEvent : class, IMessage
             where TEventConsumer : class, IConsumer
         {
-            _eventConsumerRegistrationActions.Add((config, registration) => config.AddEventConsumer<TEventConsumer>(registration));
+            _eventConsumerRegistrationActions.Add((config, registration) =>
+                config.AddEventConsumer<TEvent, TEventConsumer>(registration));
             _consumerRegistrationActions.Add(c => c.AddConsumer<TEventConsumer>());
         }
 
@@ -75,10 +82,11 @@ namespace MassTransitTests.Shared.Startup
                     RegisterQueryConsumers(cfg, ctx);
                     RegisterCommandConsumers(cfg, ctx);
                     RegisterEventConsumers(cfg, ctx);
+
                     cfg.ConfigureEndpoints(ctx);
                 });
             });
-
+            
             services.AddMassTransitHostedService();
 
             void RegisterQueryConsumers(IRabbitMqBusFactoryConfigurator config, IRegistration context)

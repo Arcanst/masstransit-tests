@@ -1,21 +1,20 @@
-﻿using System;
-using System.Linq;
-using System.Reflection;
+﻿using System.Reflection;
 using System.Text;
 using MassTransit;
 using MassTransit.RabbitMqTransport;
-using MassTransit.RabbitMqTransport.Topology;
-using MassTransitTests.DataTransferObjects.Commands;
+using MassTransit.Topology;
+using MassTransitTests.DataTransferObjects;
 using RabbitMQ.Client;
 
 namespace MassTransitTests.Shared.Startup
 {
     public static class DependencyInjectors
     {
-        public static IRabbitMqBusFactoryConfigurator AddEventConsumer<TConsumer>(
+        public static IRabbitMqBusFactoryConfigurator AddEventConsumer<TMessage, TConsumer>(
             this IRabbitMqBusFactoryConfigurator config,
             IRegistration context,
             string queueName = null)
+            where TMessage : class, IMessage
             where TConsumer : class, IConsumer
         {
             if (string.IsNullOrEmpty(queueName))
@@ -30,83 +29,86 @@ namespace MassTransitTests.Shared.Startup
             return config;
         }
 
-        public static IRabbitMqBusFactoryConfigurator AddQueryConsumer<TConsumer>(
+        public static IRabbitMqBusFactoryConfigurator AddQueryConsumer<TMessage, TConsumer>(
             this IRabbitMqBusFactoryConfigurator config,
             IRegistration context)
+            where TMessage : class, IMessage
             where TConsumer : class, IConsumer
         {
-            return AddNonEventConsumer<TConsumer>(config, context);
+            return AddNonEventConsumer<TMessage, TConsumer>(config, context);
         }
 
-        public static IRabbitMqBusFactoryConfigurator AddCommandConsumer<TConsumer>(
+        public static IRabbitMqBusFactoryConfigurator AddCommandConsumer<TMessage, TConsumer>(
             this IRabbitMqBusFactoryConfigurator config,
             IRegistration context)
+            where TMessage : class, IMessage
             where TConsumer : class, IConsumer
         {
-            return AddNonEventConsumer<TConsumer>(config, context);
+            return AddNonEventConsumer<TMessage, TConsumer>(config, context);
         }
 
-        private static IRabbitMqBusFactoryConfigurator AddNonEventConsumer<TConsumer>(
+        private static IRabbitMqBusFactoryConfigurator AddNonEventConsumer<TMessage, TConsumer>(
             IRabbitMqBusFactoryConfigurator config,
             IRegistration context)
+            where TMessage : class, IMessage
             where TConsumer : class, IConsumer
         {
             var routingKey = Assembly.GetEntryAssembly().GetName().Name;
-            var messageType = typeof(TConsumer)
-                .GetInterfaces()
-                ?.First(i => i.IsGenericType)
-                ?.GetGenericArguments()
-                ?.First();
+            var endpointName = $"{routingKey}-{typeof(TMessage).Name}";
+            var customEntityNameFormatter = new CustomEntityNameFormatter();
 
-            if (messageType == null)
-            {
-                throw new InvalidOperationException(
-                    $"Message type could not be extracted from the consumer type. ConsumerTypeName=[{typeof(TConsumer).Name}]");
-            }
+            SetupSendTopology<TMessage>(config, routingKey, endpointName);
 
-            config.ReceiveEndpoint(e =>
+            config.ReceiveEndpoint(customEntityNameFormatter.FormatEntityName<TMessage>(), e =>
             {
-                // var exchangeName = new StringBuilder(messageType.FullName)
-                //     .Replace($".{messageType.Name}", string.Empty)
-                //     .Append($":{messageType.Name}")
-                //     .ToString();
-                
-                var exchangeName = messageType.FullName;
-                
                 e.ConfigureConsumeTopology = false;
                 e.ExchangeType = ExchangeType.Direct;
 
-                e.Consumer<TConsumer>(context);
-                e.Bind(exchangeName, b =>
+                e.Bind<TMessage>(b =>
                 {
-                    e.ExchangeType = ExchangeType.Direct;
                     b.RoutingKey = routingKey;
+                    b.ExchangeType = ExchangeType.Direct;
                 });
+                e.Consumer<TConsumer>(context);
             });
+            
+            config.MessageTopology.SetEntityNameFormatter(customEntityNameFormatter);
 
-            config.Send<TestCommand>(c =>
+            return config;
+        }
+
+        /// <summary>
+        /// Used by _bus.Send, _bus.Publish and _bus.Request methods.
+        /// Afaik it does not change anything in the topology, just specifies how to use it when it's set up.
+        /// </summary>
+        private static void SetupSendTopology<TMessage>(IRabbitMqBusFactoryConfigurator config, string routingKey, string endpointName)
+            where TMessage : class, IMessage
+        {
+            // config.Message<TMessage>(c =>
+            // {
+            //     c.SetEntityName(endpointName);
+            // });
+
+            config.Send<TMessage>(c =>
             {
                 c.UseRoutingKeyFormatter(x => routingKey);
             });
             
-            config.Publish<TestCommand>(c =>
+            config.Publish<TMessage>(c =>
             {
                 c.ExchangeType = ExchangeType.Direct;
             });
+        }
+    }
+    
+    internal sealed class CustomEntityNameFormatter : IEntityNameFormatter
+    {
+        public string FormatEntityName<TMessage>()
+        {
+            var routingKey = Assembly.GetEntryAssembly().GetName().Name;
+            var endpointName = $"{typeof(TMessage).Name}.{routingKey}";
 
-            // Action<IRabbitMqMessageSendTopologyConfigurator<TestCommand>> action = c =>
-            // {
-            //     c.UseRoutingKeyFormatter(x => routingKey);
-            // };
-
-            // var sendConfigurationMethod =
-            //     typeof(IRabbitMqBusFactoryConfigurator).GetMethod(nameof(IRabbitMqBusFactoryConfigurator.Send));
-            //
-            // sendConfigurationMethod
-            //     .MakeGenericMethod(messageType)
-            //     .Invoke(config, new [] { action });
-
-            return config;
+            return endpointName;
         }
     }
 }

@@ -5,6 +5,6 @@ namespace MassTransitTests.Library1
 {
     public interface ILibrary1Service
     {
-        Task<TestResponse> SendTestCommand();
+        Task<TestCommandResponse> SendTestCommand();
     }
 }
