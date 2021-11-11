@@ -75,8 +75,8 @@ namespace MassTransitTests.Shared.Startup
                 {
                     cfg.Host("localhost", "/", config =>
                     {
-                        config.Username("rabbitmquser");
-                        config.Password("DEBmbwkSrzy9D1T9cJfa");
+                        config.Username("user");
+                        config.Password("user");
                     });
 
                     RegisterQueryConsumers(cfg, ctx);

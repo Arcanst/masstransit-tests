@@ -1,8 +1,6 @@
 ﻿using System.Reflection;
-using System.Text;
 using MassTransit;
 using MassTransit.RabbitMqTransport;
-using MassTransit.Topology;
 using MassTransitTests.DataTransferObjects;
 using RabbitMQ.Client;
 
@@ -54,12 +52,11 @@ namespace MassTransitTests.Shared.Startup
             where TConsumer : class, IConsumer
         {
             var routingKey = Assembly.GetEntryAssembly().GetName().Name;
-            var endpointName = $"{routingKey}-{typeof(TMessage).Name}";
-            var customEntityNameFormatter = new CustomEntityNameFormatter();
+            var endpointName = $"{typeof(TMessage).Name}.{routingKey}";
 
             SetupSendTopology<TMessage>(config, routingKey, endpointName);
 
-            config.ReceiveEndpoint(customEntityNameFormatter.FormatEntityName<TMessage>(), e =>
+            config.ReceiveEndpoint(endpointName, e =>
             {
                 e.ConfigureConsumeTopology = false;
                 e.ExchangeType = ExchangeType.Direct;
@@ -71,8 +68,6 @@ namespace MassTransitTests.Shared.Startup
                 });
                 e.Consumer<TConsumer>(context);
             });
-            
-            config.MessageTopology.SetEntityNameFormatter(customEntityNameFormatter);
 
             return config;
         }
@@ -84,10 +79,10 @@ namespace MassTransitTests.Shared.Startup
         private static void SetupSendTopology<TMessage>(IRabbitMqBusFactoryConfigurator config, string routingKey, string endpointName)
             where TMessage : class, IMessage
         {
-            // config.Message<TMessage>(c =>
-            // {
-            //     c.SetEntityName(endpointName);
-            // });
+            config.Message<TMessage>(c =>
+            {
+                c.SetEntityName(endpointName);
+            });
 
             config.Send<TMessage>(c =>
             {
@@ -98,17 +93,6 @@ namespace MassTransitTests.Shared.Startup
             {
                 c.ExchangeType = ExchangeType.Direct;
             });
-        }
-    }
-    
-    internal sealed class CustomEntityNameFormatter : IEntityNameFormatter
-    {
-        public string FormatEntityName<TMessage>()
-        {
-            var routingKey = Assembly.GetEntryAssembly().GetName().Name;
-            var endpointName = $"{typeof(TMessage).Name}.{routingKey}";
-
-            return endpointName;
         }
     }
 }
